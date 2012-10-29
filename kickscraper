@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+
+var ks = require('./kickstarter'),
+    config = require('./config'),
+    assert = require('assert');
+
+ks.login()
+  .then(function() {
+    return ks.get_pledges();
+  })
+  .then(function(pledges) {
+    assert.notEqual(0, pledges.length, 'No pleges found');
+    return pledges;
+  })
+  .then(function(pledges) {
+
+    for(var i=0; i < pledges.length; i++) {
+
+      // limit test messaging to chris for now
+      if(pledges[i].user == '1126679084') {
+        ks.send_message(pledges[i], JSON.stringify(pledges));
+      }
+
+    }
+
+  })
+  .fail(function(error) {
+    console.log(error);
+  });
