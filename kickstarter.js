@@ -1,94 +1,118 @@
-// =====================
-// = Private Variables =
-// =====================
-var assert = require('assert'),
-    Zombie = require('zombie'),
-    os = require('os'),
-    config = require('./config'),
-    browser = new Zombie()
+var util = require('util');
+var EventEmitter = require('events').EventEmitter;
 
-browser.site = config.paths.root;
-browser.userAgent = config.agent;
+var KickStarter = function() {
 
-// ====================
-// = Public Variables =
-// ====================
-exports.browser = browser;
+  // =====================
+  // = Private Variables =
+  // =====================
+  var assert      = require('assert'),
+      Zombie      = require('zombie'),
+      config      = require('./config'),
+      browser     = new Zombie(),
+      self        = this;
 
-// ==================
-// = Public Methods =
-// ==================
-exports.login = function() {
+  // ========
+  // = Init =
+  // ========
+  browser.site = config.paths.root;
+  browser.userAgent = config.agent;
 
-  return browser.visit(config.paths.login, { runScripts: false })
-    .then(function() {
-      browser.fill('#email', config.account.email);
-      browser.fill('#password', config.account.pass);
-    })
-    .then(function() {
-      return browser.pressButton('#login input.submit');
-    })
-    .then(function() {
-      assert.equal(
-        browser.location.pathname,
-        config.paths.profile,
-        'Not directed to the profile page after login.'
-      );
-    })
-    .then(function() {
-      console.log('PASSED: Logged in');
-    });
+  // ====================
+  // = Public Variables =
+  // ====================
+  this.browser = browser;
 
-};
+  // =============
+  // = Listeners =
+  // =============
+  this.on('test_message', function(backer) {
 
-exports.get_pledges = function() {
-  return get_pledge_page(1);
-};
+    var message  = "Hi " + backer.name + ",\n\n";
+        message += "Thank you for your pledge of " + backer.pledge + "!  ";
+        message += "Please visit the link below to cast your vote.\n\n";
+        message += config.paths.vote(backer.hash);
+        message += "\n\n";
+        message += '-SparkFun Electronics';
 
-exports.send_message = function(pledge, message) {
+    // locked to chris c.
+    self.send_message('1126679084', message);
 
-  return browser.visit(config.paths.message(pledge.user), {runScripts: false})
-    .then(function() {
-      //TODO: kill this test message
-      browser.fill('#message_body', pledge.name + "\n\n" + message + "\n\nTesting new lines.\n\n-Todd");
-    })
-    .then(function() {
-      return browser.pressButton('form.messages-new-box input.submit');
-    })
-    .then(function() {
-      assert.equal(
-        browser.location.pathname,
-        config.paths.messages,
-        'Not directed to the messages page after sending message.'
-      );
-    })
-    .then(function() {
-      console.log('PASSED: Sent test message');
-    }).fail(function(error) {
-      console.log(error);
-    });
+  });
 
-};
+  // ==================
+  // = Public Methods =
+  // ==================
+  this.login = function() {
 
-// ===================
-// = Private Methods =
-// ===================
-function get_pledge_page(page, pledges) {
+    return browser.visit(config.paths.login, { runScripts: false })
+      .then(function() {
+        browser.fill('#email', config.account.email);
+        browser.fill('#password', config.account.pass);
+      })
+      .then(function() {
+        return browser.pressButton('#login input.submit');
+      })
+      .then(function() {
+        assert.equal(
+          browser.location.pathname,
+          config.paths.profile,
+          'Not directed to the profile page after login.'
+        );
+      })
+      .then(function() {
+        self.emit('logged_in');
+      });
 
-  if(typeof pledges == 'undefined')
-    pledges = [];
+  };
 
-  //TODO: kill
-  console.log('GETTING PAGE: ' + page);
+  this.get_backers = function() {
+    return get_pledge_page(1);
+  };
 
-  return browser.visit(config.paths.pledges(page),
-    {
-      runScripts: false,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
+  this.send_message = function(user, message) {
+
+    var b = fork_browser();
+
+    b.visit(config.paths.message(user), {runScripts: false})
+      .then(function() {
+        b.fill('#message_body', message);
+      })
+      .then(function() {
+        return b.pressButton('form.messages-new-box input.submit');
+      })
+      .then(function() {
+        assert.equal(
+          b.location.pathname,
+          config.paths.messages,
+          'Not directed to the messages page after sending message.'
+        );
+      })
+      .then(function() {
+        b.close();
+        self.emit('sent_message', user, message);
+      }).fail(function(error) {
+        self.emit('error', error);
+      });
+
+  };
+
+  // ===================
+  // = Private Methods =
+  // ===================
+  var get_pledge_page = function(page, pledges) {
+
+    if(typeof pledges == 'undefined')
+      pledges = [];
+
+    return browser.visit(config.paths.pledges(page),
+      {
+        runScripts: false,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       }
-    }
-  )
+    )
     .then(function() {
       return parse_pledges();
     })
@@ -102,27 +126,44 @@ function get_pledge_page(page, pledges) {
 
     });
 
-}
+  };
 
-function parse_pledges() {
+  var parse_pledges = function() {
 
-  var backers = browser.queryAll('li.backing'),
-      pledges = [];
+    var backers = browser.queryAll('li.backing'),
+        pledges = [];
 
-  for(var i=0; i < backers.length; i++) {
+    for(var i=0; i < backers.length; i++) {
 
-    var amount = browser.text('p', backers[i]).match(config.patterns.amount);
+      var amount = browser.text('p', backers[i]).match(config.patterns.amount);
 
-    pledges.push({
-      name: browser.text('div.header a', backers[i]),
-      user: browser.query('div.header a', backers[i]).href.match(config.patterns.id)[1],
-      pledge: amount[1],
-      reward: amount[6],
-      date: browser.query('div.footer span.time', backers[i]).title
-    });
+      pledges.push({
+        name: browser.text('div.header a', backers[i]),
+        user: browser.query('div.header a', backers[i]).href.match(config.patterns.id)[1],
+        pledge: amount[1],
+        reward: amount[6],
+        date_backed: browser.query('div.footer span.time', backers[i]).title
+      });
 
-  }
+    }
 
-  return pledges;
+    return pledges;
 
-}
+  };
+
+  var fork_browser = function() {
+
+    var forked = new Zombie();
+        forked.loadCookies(browser.saveCookies());
+        forked.loadStorage(browser.saveStorage());
+        forked.site = config.paths.root;
+        forked.userAgent = config.agent;
+
+    return forked;
+
+  };
+
+};
+
+util.inherits(KickStarter, EventEmitter);
+module.exports = KickStarter;

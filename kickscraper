@@ -1,29 +1,45 @@
 #!/usr/bin/env node
 
-var ks = require('./kickstarter'),
+var assert = require('assert'),
     config = require('./config'),
-    assert = require('assert');
+    KickStarter = require('./kickstarter'),
+    DB = require('./db');
+
+var ks = new KickStarter(),
+    db = new DB();
+
+db.on('added_backer', function(backer) {
+  ks.emit('test_message', backer);
+});
 
 ks.login()
   .then(function() {
-    return ks.get_pledges();
+    return ks.get_backers();
   })
-  .then(function(pledges) {
-    assert.notEqual(0, pledges.length, 'No pleges found');
-    return pledges;
+  .then(function(backers) {
+    assert.notEqual(0, backers.length, 'No backers found');
+    return backers;
   })
-  .then(function(pledges) {
-
-    for(var i=0; i < pledges.length; i++) {
-
-      // limit test messaging to chris for now
-      if(pledges[i].user == '1126679084') {
-        ks.send_message(pledges[i], JSON.stringify(pledges));
-      }
-
-    }
-
+  .then(function(backers) {
+    db.process_backers(backers);
   })
   .fail(function(error) {
     console.log(error);
   });
+
+if(config.debug) {
+
+  ks.on('sent_message', function(user, message) {
+    console.log('sent to ' + user);
+    console.log(message);
+  });
+
+  ks.on('logged_in', function(user, message) {
+    console.log('logged_in');
+  });
+
+  ks.on('error', function(error) {
+    console.log(error);
+  });
+
+}

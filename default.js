@@ -1,4 +1,14 @@
+exports.debug = true;
+
 exports.agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4';
+
+exports.mongo = {
+  host: 'mongodb',
+  port: 27017,
+  db: 'kickstarter'
+};
+
+exports.salt = 'correcthorsebatterystaple';
 
 exports.account = {
   email: 'drspengler@gmail.com',
@@ -8,6 +18,7 @@ exports.account = {
 };
 
 exports.paths = {
+  vote_root: 'http://todd-dev.internal.sparkfun.com/vote_tour/',
   root: 'https://www.kickstarter.com',
   login: '/login',
   messages: '/messages',
@@ -22,6 +33,9 @@ exports.paths.pledges = function(page) {
 };
 exports.paths.message = function(user) {
   return exports.paths.project + '/messages/new?message%5Bto%5D=' + user;
+};
+exports.paths.vote = function(hash) {
+  return exports.paths.vote_root + hash;
 };
 
 // I'm bad at regex :(
