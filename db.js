@@ -26,7 +26,7 @@ var DB = function() {
 
     db = d;
 
-    db.collection('backers', function(err, collection) {
+    db.collection('ks_backers', function(err, collection) {
 
       if(err)
         throw err;
@@ -81,9 +81,8 @@ var DB = function() {
         sha.update(backer.name);
         sha.update(config.salt);
         sha.update(backer.date_backed);
-        sha.update(backer.pledge);
 
-    return sha.digest('hex');
+    return sha.digest('hex').slice(-24);
 
   };
 

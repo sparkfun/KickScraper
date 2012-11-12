@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
 var assert = require('assert'),
+    color = require('cli-color'),
     config = require('./config'),
     KickStarter = require('./kickstarter'),
-    DB = require('./db');
+    DB = require('./db'),
+    Map = require('./map');
 
 var ks = new KickStarter(),
-    db = new DB();
+    db = new DB(),
+    map = new Map();
 
-db.on('added_backer', function(backer) {
-  ks.emit('test_message', backer);
-});
+console.log(color.reset);
+console.log(color.white.bold.underline('Starting KickScraper'));
 
 ks.login()
   .then(function() {
@@ -23,23 +25,48 @@ ks.login()
   .then(function(backers) {
     db.process_backers(backers);
   })
+  .then(function() {
+    map.generate();
+  })
   .fail(function(error) {
-    console.log(error);
+    ks.emit('error', error);
   });
+
+
+db.on('added_backer', function(backer) {
+  ks.emit('test_message', backer);
+});
+
+ks.on('error', function(error) {
+  console.log(color.red.bold('Scraper Error: ') + color.red(error));
+});
+
+map.on('error', function(error) {
+  console.log(color.red.bold('Map Error: ') + color.red(error));
+});
 
 if(config.debug) {
 
   ks.on('sent_message', function(user, message) {
-    console.log('sent to ' + user);
-    console.log(message);
+    console.log(color.green.bold.underline('Sent message to: ' + user));
+    console.log(color.white(message));
   });
 
   ks.on('logged_in', function(user, message) {
-    console.log('logged_in');
+    console.log(color.green('Logged in to KickStarter'));
   });
 
-  ks.on('error', function(error) {
-    console.log(error);
+  ks.on('get_pledge_page', function(page) {
+    console.log(color.green('Retrieved pledge page: ' + page));
+  });
+
+  map.on('generated_image', function(path) {
+    console.log(color.green('Generated map image: ' + path));
+  });
+
+  map.on('uploaded_image', function(server) {
+    console.log(color.green('Copied map image to: ' + server));
   });
 
 }
+

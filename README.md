@@ -6,6 +6,7 @@ A utility for scraping backing information from a KickStarter project and automa
 - *nodejs* (latest stable)
 - *zombie* node module
 - *mongodb* node module
+- *cli-color* node module
 
 ## Getting Started
 
@@ -15,6 +16,7 @@ First, install the latest stable version of nodejs, clone the KickScraper repo, 
     $ cd KickScraper
     $ npm install zombie
     $ npm install mongodb
+    $ npm install cli-color
 
 Then, make a copy of the default config file and create a symlink called 'config.js' that points to it.
 

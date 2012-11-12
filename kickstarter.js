@@ -29,7 +29,7 @@ var KickStarter = function() {
   this.on('test_message', function(backer) {
 
     var message  = "Hi " + backer.name + ",\n\n";
-        message += "Thank you for your pledge of " + backer.pledge + "!  ";
+        message += "Thank you for your pledge of $" + parseFloat(backer.pledge).toFixed(2) + "!  ";
         message += "Please visit the link below to cast your vote.\n\n";
         message += config.paths.vote(backer.hash);
         message += "\n\n";
@@ -114,6 +114,7 @@ var KickStarter = function() {
       }
     )
     .then(function() {
+      self.emit('get_pledge_page', page);
       return parse_pledges();
     })
     .then(function(p){
@@ -140,7 +141,7 @@ var KickStarter = function() {
       pledges.push({
         name: browser.text('div.header a', backers[i]),
         user: browser.query('div.header a', backers[i]).href.match(config.patterns.id)[1],
-        pledge: amount[1],
+        pledge: parseFloat(amount[1].slice(1)),
         reward: amount[6],
         date_backed: browser.query('div.footer span.time', backers[i]).title
       });

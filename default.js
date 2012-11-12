@@ -10,6 +10,17 @@ exports.mongo = {
 
 exports.salt = 'correcthorsebatterystaple';
 
+exports.map = {
+  local_image: 'map.png',
+  remote_image: '/var/www-static/images/map.png',
+  remote_user: 'egon',
+  remote_host: 'static.ghostbusters.com'
+};
+
+exports.map.scp_path = function() {
+  return exports.map.remote_user + '@' + exports.map.remote_host + ':' + exports.map.remote_image;
+};
+
 exports.account = {
   email: 'drspengler@gmail.com',
   pass: 'printisdead',
