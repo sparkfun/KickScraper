@@ -44,7 +44,7 @@ Map = function() {
   // ==================
   this.generate = function() {
 
-    return browser.visit(config.paths.vote_root)
+    return browser.visit(config.paths.map)
       .then(function() {
         return browser.query('#results_map').innerHTML;
       })
@@ -57,7 +57,7 @@ Map = function() {
 
   this.upload_image = function() {
 
-    var scp = child_process.spawn('scp', [config.map.local_image, config.map.scp_path()]);
+    var scp = child_process.spawn('scp', [config.map.local_image, config.map.scp_path]);
 
     scp.on('exit', function(code) {
 

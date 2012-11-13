@@ -17,9 +17,7 @@ exports.map = {
   remote_host: 'static.ghostbusters.com'
 };
 
-exports.map.scp_path = function() {
-  return exports.map.remote_user + '@' + exports.map.remote_host + ':' + exports.map.remote_image;
-};
+exports.map.scp_path = exports.map.remote_user + '@' + exports.map.remote_host + ':' + exports.map.remote_image;
 
 exports.account = {
   email: 'drspengler@gmail.com',
@@ -39,6 +37,7 @@ exports.paths = {
 
 exports.paths.dashboard = exports.paths.project + '/dashboard';
 exports.paths.activity = exports.paths.project + '/activity';
+exports.paths.map = exports.paths.vote_root + 'png_map';
 exports.paths.pledges = function(page) {
   return exports.paths.activity + '?cat=pledges&page=' + page;
 };

@@ -35,8 +35,8 @@ var KickStarter = function() {
         message += "\n\n";
         message += '-SparkFun Electronics';
 
-    // locked to chris c.
-    self.send_message('1126679084', message);
+    // locked to lindsay l.
+    self.send_message('neurdy', message);
 
   });
 
