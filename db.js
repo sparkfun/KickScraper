@@ -8,33 +8,60 @@ var DB = function() {
   // =====================
   var mongo               = require('mongodb'),
       crypto              = require('crypto'),
+      color               = require('cli-color'),
       config              = require('./config'),
       server              = new mongo.Server(config.mongo.host, config.mongo.port),
       connector           = new mongo.Db(config.mongo.db, server, {safe: true}),
-      db                  = false,
       backers_collection  = false,
       self                = this;
 
+  // ====================
+  // = Public Variables =
+  // ====================
+  this.debug = false;
 
   // ========
   // = Init =
   // ========
-  connector.open(function(err, d) {
+  connector.open(function(err, db) {
 
-    if(err)
-      throw err;
+    if(err) {
+      self.emit('error', err);
+      return;
+    }
 
-    db = d;
+    self.emit('connected', db);
 
-    db.collection('ks_backers', function(err, collection) {
+  });
 
-      if(err)
-        throw err;
+  // =============
+  // = Listeners =
+  // =============
+  this.on('connected', function(db) {
+
+    console.log(color.green('Connected to MongoDB'));
+
+    db.collection(config.mongo.collection, function(err, collection) {
+
+      if(err) {
+        self.emit('error', err);
+        return;
+      }
 
       backers_collection = collection;
 
+      self.emit('ready', collection);
+
     });
 
+  });
+
+  this.on('ready', function(collection) {
+    console.log(color.green('MongoDB ready'));
+  });
+
+  this.on('error', function(error) {
+    console.error(color.red.bold('MongoDB Error: ') + color.red(error));
   });
 
   // ==================
@@ -42,16 +69,56 @@ var DB = function() {
   // ==================
   this.process_backers = function(backers) {
 
+    if(! backers_collection) {
+      self.emit('error', 'Could not access the KickStarter backer collection');
+      return;
+    }
+
     for(var i = 0; i < backers.length; i++) {
       process_backer(backers[i]);
     }
 
   };
 
+  this.check_new = function() {
+
+    if(! backers_collection) {
+      self.emit('error', 'Could not access the KickStarter backer collection');
+      return;
+    }
+
+    backers_collection.findOne({'messaged': {'$exists': false}}, function(err, backer) {
+
+      if(backer != null)
+        self.emit('found_new', backer);
+
+    });
+
+  };
+
+  this.messaged = function(user) {
+
+    if(! backers_collection) {
+      self.emit('error', 'Could not access the KickStarter backer collection');
+      return;
+    }
+
+    backers_collection.update({user: user}, {$set: {messaged: true}}, {safe: true}, function(err, result) {
+      if(err != null)
+        self.emit('error', 'Could not save message status in MongoDB');
+    });
+
+  }
+
   // ===================
   // = Private Methods =
   // ===================
   var process_backer = function(backer) {
+
+    if(! backers_collection) {
+      self.emit('error', 'Could not access the KickStarter backer collection');
+      return;
+    }
 
     backers_collection.findOne({user: backer.user}, function(err, b) {
 
@@ -63,6 +130,11 @@ var DB = function() {
   };
 
   var add_backer = function(backer) {
+
+    if(! backers_collection) {
+      self.emit('error', 'Could not access the KickStarter backer collection');
+      return;
+    }
 
     backer.hash = create_hash(backer);
     backer.created = new Date();

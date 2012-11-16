@@ -1,72 +1,191 @@
 #!/usr/bin/env node
 
-var assert = require('assert'),
-    color = require('cli-color'),
-    config = require('./config'),
+var assert      = require('assert'),
+    color       = require('cli-color'),
+    fs          = require('fs'),
+    config      = require('./config'),
     KickStarter = require('./kickstarter'),
-    DB = require('./db'),
-    Map = require('./map');
+    DB          = require('./db'),
+    Map         = require('./map'),
+    debug       = false,
+    log         = false;
 
-var ks = new KickStarter(),
-    db = new DB(),
-    map = new Map();
+// ==========
+// = Timers =
+// ==========
 
-console.log(color.reset);
-console.log(color.white.bold.underline('Starting KickScraper'));
+// Fetch the latest pledges
+setInterval(function() {
 
-ks.login()
-  .then(function() {
-    return ks.get_backers();
-  })
-  .then(function(backers) {
-    assert.notEqual(0, backers.length, 'No backers found');
-    return backers;
-  })
-  .then(function(backers) {
-    db.process_backers(backers);
-  })
-  .then(function() {
-    map.generate();
-  })
-  .fail(function(error) {
-    ks.emit('error', error);
+  var ks = new KickStarter(),
+      db = new DB();
+
+  ks.debug = debug;
+  db.debug = debug;
+
+  db.on('ready', function() {
+
+    ks.login()
+      .then(function() {
+        return ks.get_backers();
+      })
+      .then(function(backers) {
+        assert.notEqual(0, backers.length, 'No backers found');
+        return backers;
+      })
+      .then(function(backers) {
+        db.process_backers(backers);
+      })
+      .then(function() {
+        return ks.logout();
+      })
+      .fail(function(error) {
+        ks.emit('error', error);
+      });
+
   });
 
+}, config.timers.pledges);
 
-db.on('added_backer', function(backer) {
-  ks.emit('test_message', backer);
+// Render the map
+setInterval(function() {
+
+  var map = new Map();
+      map.debug = debug;
+      map.generate();
+
+}, config.timers.map);
+
+// Message new backers
+setInterval(function() {
+
+  var db = new DB();
+      db.debug = debug;
+
+  db.on('ready', function(collection) {
+    db.check_new();
+  });
+
+  db.on('found_new', function(backer) {
+
+    var ks = new KickStarter();
+        ks.debug = debug;
+
+    ks.login()
+      .then(function() {
+        return ks.send_message(
+          backer.user,
+          config.templates.vote_message(backer)
+        );
+      })
+      .then(function() {
+        db.messaged(backer.user);
+      })
+      .then(function() {
+        ks.logout();
+      })
+      .fail(function(error) {
+        ks.emit('error', error);
+      });
+
+  });
+
+}, config.timers.message);
+
+// ========================
+// = Command Line Options =
+// ========================
+
+process.argv.forEach(function(val, index, array) {
+
+  if(val == '--debug') {
+    debug = true;
+  }
+
+  if(val == '--log') {
+    log = true;
+  }
+
 });
 
-ks.on('error', function(error) {
-  console.log(color.red.bold('Scraper Error: ') + color.red(error));
+// =======================
+// = Debugging & Logging =
+// =======================
+var date = new Date(),
+    timestamp = (date.getMonth() + 1) + '.' + date.getDay() + '.' + date.getFullYear();
+    timestamp += ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+
+var con_log = console.log,
+    con_err = console.error;
+
+var out_log = fs.createWriteStream(config.log.out),
+    err_log = fs.createWriteStream(config.log.err);
+
+console.log = function() {
+
+  var messages = [];
+
+  var prefix = color.white('[' + timestamp + '] ');
+
+  while(arguments.length) {
+    messages.push(prefix + [].shift.call(arguments));
+  }
+
+  if(log) {
+    messages.forEach(function(message) {
+      out_log.write(message + "\n");
+    });
+  }
+
+  if(debug) {
+    con_log.apply(console, messages);
+  }
+
+};
+
+console.error = function() {
+
+  var messages = [];
+
+  var prefix = color.red('[' + timestamp + '] ');
+
+  while(arguments.length) {
+    messages.push(prefix + [].shift.call(arguments));
+  }
+
+  if(log) {
+    messages.forEach(function(message) {
+      err_log.write(message + "\n");
+    });
+  }
+
+  if(debug) {
+    con_err.apply(console, messages);
+  }
+
+};
+
+// ======================
+// = Process Monitoring =
+// ======================
+console.log(color.white.bold.underline('KickScraper Start'));
+
+process.on('uncaughtException', function(err) {
+  console.error(err);
+  process.exit();
 });
 
-map.on('error', function(error) {
-  console.log(color.red.bold('Map Error: ') + color.red(error));
+process.on('SIGINT', function() {
+  console.log(color.white.bold.underline('User Requested Quit'));
+  process.exit();
 });
 
-if(config.debug) {
+process.on('SIGHUP', function() {
+  console.log(color.white.bold.underline('SIGHUP Received'));
+  process.exit();
+});
 
-  ks.on('sent_message', function(user, message) {
-    console.log(color.green.bold.underline('Sent message to: ' + user));
-    console.log(color.white(message));
-  });
-
-  ks.on('logged_in', function(user, message) {
-    console.log(color.green('Logged in to KickStarter'));
-  });
-
-  ks.on('get_pledge_page', function(page) {
-    console.log(color.green('Retrieved pledge page: ' + page));
-  });
-
-  map.on('generated_image', function(path) {
-    console.log(color.green('Generated map image: ' + path));
-  });
-
-  map.on('uploaded_image', function(server) {
-    console.log(color.green('Copied map image to: ' + server));
-  });
-
-}
+process.on('exit', function() {
+  console.log(color.white.bold.underline('KickScraper Quit'));
+});
 

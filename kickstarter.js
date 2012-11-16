@@ -8,9 +8,16 @@ var KickStarter = function() {
   // =====================
   var assert      = require('assert'),
       Zombie      = require('zombie'),
+      color       = require('cli-color'),
       config      = require('./config'),
       browser     = new Zombie(),
       self        = this;
+
+  // ====================
+  // = Public Variables =
+  // ====================
+  this.browser = browser;
+  this.debug = false;
 
   // ========
   // = Init =
@@ -18,26 +25,28 @@ var KickStarter = function() {
   browser.site = config.paths.root;
   browser.userAgent = config.agent;
 
-  // ====================
-  // = Public Variables =
-  // ====================
-  this.browser = browser;
-
   // =============
   // = Listeners =
   // =============
-  this.on('test_message', function(backer) {
+  this.on('sent_message', function(user, message) {
+    console.log(color.green.bold.underline('Sent message to: ' + user));
+    console.log(color.white(message));
+  });
 
-    var message  = "Hi " + backer.name + ",\n\n";
-        message += "Thank you for your pledge of $" + parseFloat(backer.pledge).toFixed(2) + "!  ";
-        message += "Please visit the link below to cast your vote.\n\n";
-        message += config.paths.vote(backer.hash);
-        message += "\n\n";
-        message += '-SparkFun Electronics';
+  this.on('logged_in', function(user, message) {
+    console.log(color.green('Logged in to KickStarter'));
+  });
 
-    // locked to lindsay l.
-    self.send_message('neurdy', message);
+  this.on('logged_out', function(user, message) {
+    console.log(color.green('Logged out of KickStarter'));
+  });
 
+  this.on('get_pledge_page', function(page) {
+    console.log(color.green('Retrieved pledge page: ' + page));
+  });
+
+  this.on('error', function(error) {
+    console.error(color.red.bold('Scraper Error: ') + color.red(error));
   });
 
   // ==================
@@ -72,27 +81,32 @@ var KickStarter = function() {
 
   this.send_message = function(user, message) {
 
-    var b = fork_browser();
-
-    b.visit(config.paths.message(user), {runScripts: false})
+    return browser.visit(config.paths.message(user), {runScripts: false})
       .then(function() {
-        b.fill('#message_body', message);
+        browser.fill('#message_body', message);
       })
       .then(function() {
-        return b.pressButton('form.messages-new-box input.submit');
+        return browser.pressButton('form.messages-new-box input.submit');
       })
       .then(function() {
         assert.equal(
-          b.location.pathname,
+          browser.location.pathname,
           config.paths.messages,
           'Not directed to the messages page after sending message.'
         );
       })
       .then(function() {
-        b.close();
         self.emit('sent_message', user, message);
-      }).fail(function(error) {
-        self.emit('error', error);
+      });
+
+  };
+
+  this.logout = function() {
+
+    return browser.visit(config.paths.logout, {runScripts: false})
+      .then(function() {
+        self.emit('logged_out');
+        browser.close();
       });
 
   };
