@@ -37,8 +37,8 @@ Map = function() {
     console.log(color.green('Generated map image: ' + image_path));
   });
 
-  this.on('uploaded_image', function(server) {
-    console.log(color.green('Copied map image to: ' + server));
+  this.on('copy_image', function(path) {
+    console.log(color.green('Copied map image to: ' + path));
   });
 
   this.on('error', function(error) {
@@ -52,7 +52,7 @@ Map = function() {
       return;
     }
 
-    self.upload_image();
+    self.copy_image();
 
     self.emit('generated_image');
 
@@ -74,18 +74,18 @@ Map = function() {
 
   };
 
-  this.upload_image = function() {
+  this.copy_image = function() {
 
-    var scp = child_process.spawn('scp', [image_path, config.map.scp_path]);
+    var cp = child_process.spawn('cp', [image_path, config.map.live_path]);
 
-    scp.on('exit', function(code) {
+    cp.on('exit', function(code) {
 
       if(code !== 0) {
-        self.emit('error', 'Image upload to ' + config.map.remote_host + ' failed.');
+        self.emit('error', 'Image copy to ' + config.map.live_path + ' failed.');
         return;
       }
 
-      self.emit('uploaded_image', config.map.remote_host);
+      self.emit('copy_image', config.map.live_path);
 
     });
 

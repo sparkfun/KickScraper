@@ -21,12 +21,8 @@ exports.salt = 'correcthorsebatterystaple';
 exports.map = {
   local_image: 'map',
   extension: '.png',
-  remote_image: '/var/www/ks/map.png',
-  remote_user: 'todd',
-  remote_host: 'static.ghostbusters.com'
+  live_path: '/mnt/www-static/ks/map.png'
 };
-
-exports.map.scp_path = exports.map.remote_user + '@' + exports.map.remote_host + ':' + exports.map.remote_image;
 
 exports.account = {
   email: 'drspengler@ghostbusters.com',
