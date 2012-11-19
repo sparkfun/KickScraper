@@ -118,8 +118,8 @@ var date = new Date(),
 var con_log = console.log,
     con_err = console.error;
 
-var out_log = fs.createWriteStream(config.log.out),
-    err_log = fs.createWriteStream(config.log.err);
+var out_log = fs.createWriteStream(config.log.out, {flags: 'a', encoding: null, mode: 0666}),
+    err_log = fs.createWriteStream(config.log.err, {flags: 'a', encoding: null, mode: 0666});
 
 console.log = function() {
 
