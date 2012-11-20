@@ -40,6 +40,7 @@ setInterval(function() {
         return ks.logout();
       })
       .fail(function(error) {
+        ks.logout();
         ks.emit('error', error);
       });
 
@@ -83,8 +84,11 @@ setInterval(function() {
       })
       .then(function() {
         ks.logout();
+        db.close();
       })
       .fail(function(error) {
+        ks.logout();
+        db.close();
         ks.emit('error', error);
       });
 

@@ -12,6 +12,7 @@ var DB = function() {
       config              = require('./config'),
       server              = new mongo.Server(config.mongo.host, config.mongo.port),
       connector           = new mongo.Db(config.mongo.db, server, {safe: true}),
+      database            = false,
       backers_collection  = false,
       self                = this;
 
@@ -49,6 +50,7 @@ var DB = function() {
       }
 
       backers_collection = collection;
+      database = db;
 
       self.emit('ready', collection);
 
@@ -58,6 +60,10 @@ var DB = function() {
 
   this.on('ready', function(collection) {
     console.log(color.green('MongoDB ready'));
+  });
+
+  this.on('disconnected', function() {
+    console.log('Connection to MongoDB closed');
   });
 
   this.on('error', function(error) {
@@ -108,7 +114,12 @@ var DB = function() {
         self.emit('error', 'Could not save message status in MongoDB');
     });
 
-  }
+  };
+
+  this.close() = function() {
+    database.close();
+    self.emit('disconnected');
+  };
 
   // ===================
   // = Private Methods =
