@@ -62,6 +62,18 @@ var DB = function() {
     console.log(color.green('MongoDB ready'));
   });
 
+  this.on('processing_backers', function(count) {
+    console.log(color.green.bold('Processing ' + count + ' backers'));
+  });
+
+  this.on('skipping_backer', function(backer) {
+    console.log(color.yellow('Skipping processing: ' + backer.name));
+  });
+
+  this.on('added_backer', function(backer) {
+    console.log(color.green('Added: ' + backer.name));
+  });
+
   this.on('disconnected', function() {
     console.log('Connection to MongoDB closed');
   });
@@ -79,6 +91,8 @@ var DB = function() {
       self.emit('error', 'Could not access the KickStarter backer collection');
       return;
     }
+
+    self.emit('processing_backers', backers.length);
 
     for(var i = 0; i < backers.length; i++) {
       process_backer(backers[i]);
@@ -112,11 +126,13 @@ var DB = function() {
     backers_collection.update({user: user}, {$set: {messaged: true}}, {safe: true}, function(err, result) {
       if(err != null)
         self.emit('error', 'Could not save message status in MongoDB');
+      else
+        self.emit('message_marked');
     });
 
   };
 
-  this.close() = function() {
+  this.close = function() {
     database.close();
     self.emit('disconnected');
   };
@@ -135,6 +151,8 @@ var DB = function() {
 
       if(b == null)
         add_backer(backer);
+      else
+        self.emit('skipping_backer', backer);
 
     });
 

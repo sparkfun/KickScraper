@@ -17,8 +17,9 @@ var assert      = require('assert'),
 // Fetch the latest pledges
 setInterval(function() {
 
-  var ks = new KickStarter(),
-      db = new DB();
+  var ks    = new KickStarter(),
+      db    = new DB(),
+      count = 0;
 
   ks.debug = debug;
   db.debug = debug;
@@ -41,8 +42,36 @@ setInterval(function() {
       })
       .fail(function(error) {
         ks.logout();
+        db.close();
         ks.emit('error', error);
       });
+
+  });
+
+  db.on('processing_backers', function(c) {
+
+    count = c;
+
+    if(count == 0)
+      db.close();
+
+  });
+
+  db.on('skipping_backer', function(backer) {
+
+    count--;
+
+    if(count == 0)
+      db.close();
+
+  });
+
+  db.on('added_backer', function(backer) {
+
+    count--;
+
+    if(count == 0)
+      db.close();
 
   });
 
@@ -84,7 +113,6 @@ setInterval(function() {
       })
       .then(function() {
         ks.logout();
-        db.close();
       })
       .fail(function(error) {
         ks.logout();
@@ -92,6 +120,10 @@ setInterval(function() {
         ks.emit('error', error);
       });
 
+  });
+
+  db.on('message_marked', function() {
+    db.close();
   });
 
 }, config.timers.message);
@@ -115,9 +147,6 @@ process.argv.forEach(function(val, index, array) {
 // =======================
 // = Debugging & Logging =
 // =======================
-var date = new Date(),
-    timestamp = (date.getMonth() + 1) + '.' + date.getDay() + '.' + date.getFullYear();
-    timestamp += ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
 
 var con_log = console.log,
     con_err = console.error;
@@ -129,7 +158,7 @@ console.log = function() {
 
   var messages = [];
 
-  var prefix = color.white('[' + timestamp + '] ');
+  var prefix = color.white('[' + config.timestamp() + '] ');
 
   while(arguments.length) {
     messages.push(prefix + [].shift.call(arguments));
@@ -151,7 +180,7 @@ console.error = function() {
 
   var messages = [];
 
-  var prefix = color.red('[' + timestamp + '] ');
+  var prefix = color.red('[' + config.timestamp() + '] ');
 
   while(arguments.length) {
     messages.push(prefix + [].shift.call(arguments));

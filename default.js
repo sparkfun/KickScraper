@@ -56,16 +56,15 @@ exports.paths.vote = function(hash) {
   return exports.paths.vote_root + hash;
 };
 
-// TODO: update this.
 exports.templates = {};
 exports.templates.vote_message = function(backer) {
   var message  = "Hi " + backer.name + ",\n\n";
       message += "Thank you for your pledge of $" + parseFloat(backer.pledge).toFixed(2) + " to the SparkFun National Tour KickStarter campaign!  ";
-      message += "Now we'd like to get an idea of where you would most like us to go. Please visit the link below to vote for your state.\n\n";
+      message += "We'd like to get an idea of where you would most like us to go.  Please visit the link below to cast your vote.\n\n";
       message += exports.paths.vote(backer.hash);
       message += "\n\n";
-      message += "Keep an eye on the KickStarter campaign page and http://www.sparkfun.com/ for updates. Thanks!\n\n";
-      message += '- The SparkFun Team';
+      message += "Keep an eye on the KickStarter campaign page and http://www.sparkfun.com/ for updates.\n\nThanks!\n";
+      message += '-The SparkFun Team';
 
   return message;
 };
@@ -74,4 +73,15 @@ exports.templates.vote_message = function(backer) {
 exports.patterns = {
   id: /\/profile\/(.*)/,
   amount: /pledged (\$(\d{1,3}(\,\d{3})*|(\d+))(\.\d{2})?) for .*((\$(\d{1,3}(\,\d{3})*|(\d+))(\.\d{2})?)|(no reward))/i
+};
+
+exports.timestamp = function() {
+
+  var date = new Date();
+
+  var timestamp = (date.getMonth() + 1) + '.' + date.getDay() + '.' + date.getFullYear();
+      timestamp += ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+
+  return timestamp;
+
 };

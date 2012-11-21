@@ -23,9 +23,8 @@ Map = function() {
   // ========
   // = Init =
   // ========
-  var timestamp = Math.round((new Date()).getTime() / 1000),
-      convert = child_process.spawn('convert', ['svg:', 'png:-']),
-      image_path = config.map.local_image + '_' + timestamp + config.map.extension,
+  var convert = child_process.spawn('convert', ['svg:', 'png:-']),
+      image_path = config.map.local_image + config.map.extension,
       png = fs.createWriteStream(image_path);
 
   convert.stdout.pipe(png);
