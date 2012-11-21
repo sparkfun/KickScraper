@@ -111,6 +111,8 @@ var DB = function() {
 
       if(backer != null)
         self.emit('found_new', backer);
+      else
+        self.emit('no_new');
 
     });
 

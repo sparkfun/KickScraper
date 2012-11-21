@@ -126,6 +126,10 @@ setInterval(function() {
     db.close();
   });
 
+  db.on('no_new', function() {
+    db.close();
+  });
+
 }, config.timers.message);
 
 // ========================
