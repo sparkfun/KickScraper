@@ -138,7 +138,7 @@ var KickStarter = function() {
 
       pledges = pledges.concat(p);
       return get_pledge_page(page + 1, pledges);
-
+ 
     });
 
   };
@@ -152,13 +152,17 @@ var KickStarter = function() {
 
       var amount = browser.text('p', backers[i]).match(config.patterns.amount);
 
-      pledges.push({
-        name: browser.text('div.header a', backers[i]),
-        user: browser.query('div.header a', backers[i]).href.match(config.patterns.id)[1],
-        pledge: parseFloat(amount[1].slice(1)),
-        reward: amount[6],
-        date_backed: browser.query('div.footer span.time', backers[i]).title
-      });
+      if(typeof browser.query('div.header a', backers[i]) != 'undefined') {
+ 
+        pledges.push({
+          name: browser.text('div.header a', backers[i]),
+          user: browser.query('div.header a', backers[i]).href.match(config.patterns.id)[1],
+          pledge: parseFloat(amount[1].replace(/[\$,\,]/g, '')),
+          reward: amount[6],
+          date_backed: browser.query('div.footer span.time', backers[i]).title
+        });
+
+      }
 
     }
 
