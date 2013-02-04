@@ -1,6 +1,6 @@
 # KickScraper
 
-A utility for scraping backing information from a KickStarter project and automatically messaging backers with additional information.
+A utility for scraping backing information from a KickStarter project and automatically messaging backers with additional information.  This utility was written to funnel data from the [SparkFun National Tour KickStarter Campaign](http://www.kickstarter.com/projects/2112812006/sparkfun-national-tour) to the [sparkfun.com](http://sparkfun.com) hosted [Voting System](http://www.sparkfun.com/edukickstarter/).
 
 ## Requirements
 - *nodejs* (latest stable)
