@@ -10,7 +10,7 @@ exports.timers = {
 };
 
 exports.mongo = {
-  host: 'mongodb',
+  host: 'mongodb-test',
   port: 27017,
   db: 'kickstarter',
   collection: 'backers'
@@ -59,12 +59,12 @@ exports.paths.vote = function(hash) {
 exports.templates = {};
 exports.templates.vote_message = function(backer) {
   var message  = "Hi " + backer.name + ",\n\n";
-      message += "Thank you for your pledge of $" + parseFloat(backer.pledge).toFixed(2) + " to the SparkFun National Tour KickStarter campaign!  ";
-      message += "We'd like to get an idea of where you would most like us to go.  Please visit the link below to cast your vote.\n\n";
+      message += "Thank you for your pledge of $" + parseFloat(backer.pledge).toFixed(2) + " to our campaign!  ";
+      message += "Please visit the link below to cast your vote.\n\n";
       message += exports.paths.vote(backer.hash);
       message += "\n\n";
-      message += "Keep an eye on the KickStarter campaign page and http://www.sparkfun.com/ for updates.\n\nThanks!\n";
-      message += '-The SparkFun Team';
+      message += "Keep an eye on the KickStarter campaign page for updates.\n\nThanks!\n";
+      message += '-Egon';
 
   return message;
 };
